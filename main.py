@@ -1,12 +1,12 @@
-from fastapi import FastAPI
-from fastapi.responses import StreamingResponse, FileResponse
+from fastapi import FastAPI, Form
+from fastapi.responses import StreamingResponse, FileResponse, RedirectResponse
 from datetime import datetime
 import asyncio
 import httpx
 from dotenv import load_dotenv
 import os
-
-
+from typing import Annotated
+import json
 
 
 app = FastAPI()
@@ -15,7 +15,7 @@ load_dotenv()
 LAT = os.getenv("LAT")
 LON = os.getenv("LON")
 
-
+todos = []
 
 @app.get("/")
 def health():
@@ -38,8 +38,24 @@ def get_js_file():
 def get_curr_weather_data():
     return StreamingResponse(media_type="text/event-stream",content=get_curr_weather())
 
+# TO-DO route
+@app.post("/todo")
+def add_task(task : Annotated[str, Form()]):
+    todos.append(task)
+    return RedirectResponse("/mirror_dashboard", status_code=303)
 
-    
+
+@app.get("/get_todo")
+def get_todo():
+    return StreamingResponse(media_type="text/event-stream", content=get_todo())
+
+
+async def get_todo():
+    while True:
+        await asyncio.sleep(1)
+        tasks = json.dumps(todos)
+        yield f"data: {tasks}\n\n"
+
 # Async func for /hour route
 async def hour():
     while True:
@@ -51,7 +67,7 @@ async def hour():
 # async func for weather api
 async def get_curr_weather():
     while True:
-        await asyncio.sleep(60)
+        await asyncio.sleep(5)
         url = f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&current_weather=true" 
         response = httpx.get(url).json()
         weather_data = response['current_weather']

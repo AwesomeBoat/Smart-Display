@@ -9,6 +9,16 @@
 <body>
     <p id="clock">--:--:--</p>
     <p id="weather">ff</p>
+    
+    <form action="/todo" method="post">
+        <label for="task">Task : </label>
+        <input type="text" id="task" name="task">
+        <button type="submit">Ajouter la tâche</button>
+    </form>
+
+    <ul id="todoList">
+        
+    </ul>
 
     <script src="script.js"></script>
 </body>
