@@ -1,4 +1,6 @@
 import asyncio
+import httpx
+
 
 async def dire_bonjour():
     print("Bonjour")
@@ -37,7 +39,13 @@ async def final_main(i):
     async for response in final_test(i):
          print(response)
 
-asyncio.run(final_main(3))
 
 
-# asyncio.run(main())
+meteo = httpx.get("https://api.open-meteo.com/v1/forecast?latitude=48.85&longitude=2.35&current_weather=true")
+
+data = meteo.json()['current_weather']
+
+curr_temp = data['temperature']
+curr_windspeed = data['windspeed']
+
+print(f"Temperature: {curr_temp}\nvitesse du vent: {curr_windspeed}")
