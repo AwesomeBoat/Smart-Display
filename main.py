@@ -7,24 +7,34 @@ from dotenv import load_dotenv
 import os
 from typing import Annotated
 import json
-
+import sqlite3
 
 app = FastAPI()
 load_dotenv()
 
+# CONSTANTS FROM .ENV
 LAT = os.getenv("LAT")
 LON = os.getenv("LON")
 
-todos = []
 
+# SQLite con
+con = sqlite3.connect("data/mirror.db")
+cur = con.cursor()
+cur.execute("CREATE TABLE IF NOT EXISTS task(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, created_at TEXT)")
+con.close()
+
+
+# API 
 @app.get("/")
 def health():
     return {"status": "ok"}
 
+# Send actual time to front
 @app.get("/get_time")
 def get_time():
     return StreamingResponse(media_type="text/event-stream",content=hour())
 
+# return the html index
 @app.get("/mirror_dashboard")
 def get_mirror_dashboard():
     return FileResponse("front/index.html")
@@ -34,26 +44,37 @@ def get_mirror_dashboard():
 def get_js_file():
     return FileResponse("front/script.js")
 
+
 @app.get("/get_curr_weather_data")
 def get_curr_weather_data():
     return StreamingResponse(media_type="text/event-stream",content=get_curr_weather())
 
 # TO-DO route
-@app.post("/todo")
+@app.post("/add_task")
 def add_task(task : Annotated[str, Form()]):
-    todos.append(task)
+    con = sqlite3.connect("data/mirror.db")
+    cur = con.cursor()
+    now = datetime.now().strftime("%H:%M:%S")
+    command = f"INSERT INTO task (name, created_at) VALUES (?, ?)"
+    cur.execute(command, (task,now))
+    con.commit()
+    con.close()
     return RedirectResponse("/mirror_dashboard", status_code=303)
 
 
-@app.get("/get_todo")
-def get_todo():
+@app.get("/get_curr_todo")
+def get_curr_todo():
     return StreamingResponse(media_type="text/event-stream", content=get_todo())
 
 
 async def get_todo():
     while True:
         await asyncio.sleep(1)
-        tasks = json.dumps(todos)
+        con = sqlite3.connect("data/mirror.db")
+        cur = con.cursor()
+        command = "SELECT * FROM task"
+        tasks = json.dumps(cur.execute(command).fetchall())
+        con.close()
         yield f"data: {tasks}\n\n"
 
 # Async func for /hour route
