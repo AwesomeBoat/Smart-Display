@@ -15,7 +15,7 @@ load_dotenv()
 # CONSTANTS FROM .ENV
 LAT = os.getenv("LAT")
 LON = os.getenv("LON")
-
+ICAL_URL = os.getenv("ICAL_URL")
 
 # SQLite con
 con = sqlite3.connect("data/mirror.db")
@@ -95,3 +95,55 @@ async def get_curr_weather():
         data = {"temperature:":weather_data['temperature'],
                 "windspeed":weather_data['windspeed']}
         yield f"data: {data['temperature:']}°C | Wind {data['windspeed']}\n\n"
+
+
+# func for calendar
+def get_calendar():
+    response = httpx.get(ICAL_URL)
+    cal_data = response.text
+    with open ("data/calendar.txt", 'w') as f:
+        f.writelines(cal_data)
+
+
+
+def get_upcoming_events(ical_text):
+    events = []
+    with open (ical_text, 'r') as f:
+    
+        in_event = False
+        outdated = True
+
+        for line in f.readlines():
+            
+            line = line.strip()
+            print(line)
+            if line == "BEGIN:VEVENT":
+                in_event = True
+                new_event = {}
+
+            elif line == "END:VEVENT": # APPEND THE EVENT TO THE LIST IF NOT OUTDATED
+                # add event only if date >= today
+                if not outdated:
+                    events.append(new_event)
+                in_event = False
+                outdated = True
+
+            if in_event: # ADD KEYS AND VALUES FOR THE EVENT
+                if line.startswith("SUMMARY:") or line.startswith("DTSTART:"):
+                    key, value = line.split(":", maxsplit=1)
+                    new_event[key]=value
+
+                    # Check if date value is >= today
+                if line.startswith("DTSTART") or line.startswith("DTEND"):
+                    event_date = line.split(":")[-1][:-1]  #[-1] bcs [0] is DTSTART / DTEND | [:-1] get rid of the "z" at the end of the date value
+                    event_date_py = datetime.strptime(event_date, "%Y%m%dT%H%M%S") # Transform the str into a date type
+                    now = datetime.now()
+                    if event_date_py >= now: # Compare event date and today
+                        outdated = False
+            else:
+                continue
+
+    return events
+        
+                
+print(get_upcoming_events("data/calendar.txt"))
