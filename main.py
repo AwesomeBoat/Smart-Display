@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Form
 from fastapi.responses import StreamingResponse, FileResponse, RedirectResponse
-from datetime import datetime
+from datetime import datetime, date
 import asyncio
 import httpx
 from dotenv import load_dotenv
@@ -8,6 +8,8 @@ import os
 from typing import Annotated
 import json
 import sqlite3
+from icalendar import Calendar
+
 
 app = FastAPI()
 load_dotenv()
@@ -98,7 +100,21 @@ async def get_curr_weather():
 
 
 # func for calendar
+
+@app.get("/get_calendar")
 def get_calendar():
+    calendar_data_path = "data/calendar.txt"
+    with open (calendar_data_path, 'r', encoding="utf-8") as f:
+        ical_content= f.read()
+
+        events = parse_ical_events(ical_content)
+
+    return events
+
+def get_calendar_from_google():
+    """
+    Get calendar as txt file and write everything in data/calendar.txt
+    """
     response = httpx.get(ICAL_URL)
     cal_data = response.text
     with open ("data/calendar.txt", 'w') as f:
@@ -106,44 +122,31 @@ def get_calendar():
 
 
 
-def get_upcoming_events(ical_text):
+def parse_ical_events(ical_content: str) -> list[dict]:
+    """
+    Parse ical calendar content and returns a list of dict
+    """
+    calendar = Calendar.from_ical(ical_content)
     events = []
-    with open (ical_text, 'r') as f:
-    
-        in_event = False
-        outdated = True
 
-        for line in f.readlines():
-            
-            line = line.strip()
-            print(line)
-            if line == "BEGIN:VEVENT":
-                in_event = True
-                new_event = {}
+    for component in calendar.walk():
+        if component.name != "VEVENT":
+            continue
 
-            elif line == "END:VEVENT": # APPEND THE EVENT TO THE LIST IF NOT OUTDATED
-                # add event only if date >= today
-                if not outdated:
-                    events.append(new_event)
-                in_event = False
-                outdated = True
+        start = component.get("dtstart")
+        end = component.get("dtend")
 
-            if in_event: # ADD KEYS AND VALUES FOR THE EVENT
-                if line.startswith("SUMMARY:") or line.startswith("DTSTART:"):
-                    key, value = line.split(":", maxsplit=1)
-                    new_event[key]=value
-
-                    # Check if date value is >= today
-                if line.startswith("DTSTART") or line.startswith("DTEND"):
-                    event_date = line.split(":")[-1][:-1]  #[-1] bcs [0] is DTSTART / DTEND | [:-1] get rid of the "z" at the end of the date value
-                    event_date_py = datetime.strptime(event_date, "%Y%m%dT%H%M%S") # Transform the str into a date type
-                    now = datetime.now()
-                    if event_date_py >= now: # Compare event date and today
-                        outdated = False
-            else:
-                continue
+        events.append({
+            "id": str(component.get("uid", "")),
+            "title": str(component.get("summary", "")),
+            "description": str(component.get("description", "")),
+            "location": str(component.get("location", "")),
+            "start": start.dt if start else None,
+            "end": end.dt if end else None,
+            "all_day": isinstance(start.dt, date)
+                       and not isinstance(start.dt, datetime)
+                       if start else False,
+            "status": str(component.get("status", "")),
+        })
 
     return events
-        
-                
-print(get_upcoming_events("data/calendar.txt"))
