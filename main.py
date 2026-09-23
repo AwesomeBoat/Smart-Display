@@ -9,9 +9,19 @@ from typing import Annotated
 import json
 import sqlite3
 from icalendar import Calendar
+from contextlib import asynccontextmanager
 
 
-app = FastAPI()
+# Startup
+@asynccontextmanager
+async def lifespan(app):
+    while True:
+        asyncio.create_task(get_calendar_from_google())
+        await asyncio.sleep(60)
+        yield
+        pass
+
+app = FastAPI(lifespan=lifespan)
 load_dotenv()
 
 # CONSTANTS FROM .ENV
@@ -30,6 +40,8 @@ con.close()
 @app.get("/")
 def health():
     return {"status": "ok"}
+
+
 
 # Send actual time to front
 @app.get("/get_time")
@@ -150,3 +162,4 @@ def parse_ical_events(ical_content: str) -> list[dict]:
         })
 
     return events
+

@@ -37,10 +37,14 @@ async function loadCalendar(){
     const response = await fetch("http://localhost:8000/get_calendar");
     const calendar_list = document.getElementById("calendarList")
     const data = await response.json();
+    const now = new Date();
     for (const element of data){
+        const elementEnd = new Date(element.end);
+        if (elementEnd >= now){
         const newEvent= document.createElement("li");
         newEvent.textContent = `${element.title} - ${element.start} - ${element.end}`;
         calendar_list.appendChild(newEvent);
+        }
     }
 }
 
