@@ -23,13 +23,12 @@ async def get_curr_todo():
 
 async def get_todo():
     """
-    Returns all tasks from task table in display.db
+    Returns all tasks of active profile from task table in display.db 
     """
     while True:
         await asyncio.sleep(1)
         with get_db() as con:
             cur = con.cursor()
-            command = "SELECT * FROM task"
             tasks = json.dumps([dict(row) for row in cur.execute(command).fetchall()])
             yield f"data: {tasks}\n\n"
 

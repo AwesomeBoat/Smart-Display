@@ -6,7 +6,7 @@ from config import INDEX_PATH, JS_SCRIPT_PATH, PHONE_PATH
 from data.db import init_db
 # Import widgets
 from widgets import calendar, clock, todo, weather, habits
-
+from profiles import profile
 
 
 
@@ -21,7 +21,7 @@ app.include_router(clock.router)
 app.include_router(todo.router)
 app.include_router(weather.router)
 app.include_router(habits.router)
-
+app.include_router(profile.router)
 
 # API 
 @app.get("/")

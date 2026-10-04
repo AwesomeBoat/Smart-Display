@@ -7,7 +7,7 @@ def get_db():
     conn = sqlite3.connect(DB_PATH)
     # rows can be read by column name (row["name"]) and converted with dict(row)
     conn.row_factory = sqlite3.Row
-
+    conn.execute("PRAGMA foreign_keys = ON")
     try:
         yield conn
         conn.commit()
@@ -26,7 +26,9 @@ def init_db():
     habits="""
     CREATE TABLE IF NOT EXISTS habits (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL);
+    name TEXT NOT NULL,
+    profile_id INTEGER NOT NULL,
+    FOREIGN KEY(profile_id) REFERENCES profile(id));
     """
 
     habit_logs="""
@@ -34,7 +36,9 @@ def init_db():
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     habit_id INTEGER NOT NULL,
     date TEXT NOT NULL,
-    FOREIGN KEY(habit_id) REFERENCES habits(id));
+    profile_id INTEGER NOT NULL,
+    FOREIGN KEY(habit_id) REFERENCES habits(id),
+    FOREIGN KEY(profile_id) REFERENCES profile(id));
     """
 
     task="""
@@ -42,23 +46,30 @@ def init_db():
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     created_at TEXT NOT NULL,
-    done INTEGER NOT NULL DEFAULT 0);
+    profile_id INTEGER NOT NULL,
+    done INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY(profile_id) REFERENCES profile(id));
+    """
+
+    profile="""
+    CREATE TABLE IF NOT EXISTS profile(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    ical_url TEXT,
+    active INTEGER NOT NULL DEFAULT 0);
     """
 
     with get_db() as conn:
         cur = conn.cursor()
-
+        cur.execute(profile)
         cur.execute(habits)
         cur.execute(habit_logs)
         cur.execute(task)
 
-        # CREATE TABLE IF NOT EXISTS doesn't touch an existing table:
-        # add the "done" column to a task table created before it existed
-        cur.execute("PRAGMA table_info(task)")
-        columns = [row["name"] for row in cur.fetchall()]
-        if "done" not in columns:
-            cur.execute("ALTER TABLE task ADD COLUMN done INTEGER NOT NULL DEFAULT 0")
-
+        # Create a default profile if doesn't exists
+        cur.execute("SELECT COUNT(*) AS n FROM profile")
+        if cur.fetchone()["n"] == 0:
+            cur.execute("INSERT INTO profile (name, active) VALUES (?,?)", ("Default",1))
 
 
 if __name__ == "__main__":
