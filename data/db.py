@@ -41,7 +41,8 @@ def init_db():
     CREATE TABLE IF NOT EXISTS task(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    created_at TEXT NOT NULL);
+    created_at TEXT NOT NULL,
+    done INTEGER NOT NULL DEFAULT 0);
     """
 
     with get_db() as conn:
@@ -51,3 +52,14 @@ def init_db():
         cur.execute(habit_logs)
         cur.execute(task)
 
+        # CREATE TABLE IF NOT EXISTS doesn't touch an existing table:
+        # add the "done" column to a task table created before it existed
+        cur.execute("PRAGMA table_info(task)")
+        columns = [row["name"] for row in cur.fetchall()]
+        if "done" not in columns:
+            cur.execute("ALTER TABLE task ADD COLUMN done INTEGER NOT NULL DEFAULT 0")
+
+
+
+if __name__ == "__main__":
+    init_db()

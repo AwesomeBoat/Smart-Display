@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Display - Télécommande</title>
+    <style>
+        body { font-family: sans-serif; padding: 1rem; max-width: 32rem; margin: 0 auto; }
+        h2 { margin-top: 2rem; }
+        ul { padding: 0; list-style: none; }
+        li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid #ddd; }
+        .label { flex: 1 1 100%; }
+        li.task .label { flex: 1; }
+        input[type="checkbox"] { width: 1.5rem; height: 1.5rem; }
+        form { display: flex; gap: 0.5rem; }
+        input[type="text"] { flex: 1; font-size: 1rem; padding: 0.6rem; }
+        button { font-size: 1rem; padding: 0.6rem 0.8rem; }
+        #message { color: #b00020; min-height: 1.5rem; }
+    </style>
+</head>
+<body>
+    <p id="message"></p>
+
+    <h2>Tâches</h2>
+    <form id="taskForm">
+        <input type="text" id="taskInput" name="task" placeholder="Nouvelle tâche" required>
+        <button type="submit">Ajouter</button>
+    </form>
+    <p id="taskCount"></p>
+    <ul id="taskList"></ul>
+
+    <h2>Habitudes</h2>
+    <form id="habitForm">
+        <input type="text" id="habitInput" name="name" placeholder="Nouvelle habitude" required>
+        <button type="submit">Ajouter</button>
+    </form>
+    <ul id="habitList"></ul>
+
+    <script>
+        // All URLs are relative: the browser adds the address of the server that served this page
+        const message = document.getElementById("message");
+
+        // Send a request to the API, show an error message if it fails
+        async function callApi(url, options){
+            message.textContent = "";
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok){
+                    const error = await response.json();
+                    message.textContent = `Erreur ${response.status} : ${error.detail}`;
+                    return null;
+                }
+                return await response.json();
+            } catch (e) {
+                message.textContent = "Serveur injoignable";
+                return null;
+            }
+        }
+
+        function makeButton(text, onclick){
+            const button = document.createElement("button");
+            button.textContent = text;
+            button.onclick = onclick;
+            return button;
+        }
+
+        // === TASKS ===
+        const taskList = document.getElementById("taskList");
+        const taskCount = document.getElementById("taskCount");
+        const taskForm = document.getElementById("taskForm");
+        const taskInput = document.getElementById("taskInput");
+        let lastTasksData = "";
+
+        taskForm.onsubmit = async function(event){
+            event.preventDefault();
+            const result = await callApi("/todo/add_task", {method: "POST", body: new FormData(taskForm)});
+            if (result){
+                taskInput.value = "";
+            }
+        };
+
+        // the server pushes the list: every change (from any device) is displayed
+        const tasksSource = new EventSource("/todo/get_curr_todo");
+        tasksSource.onmessage = function(event){
+            if (event.data === lastTasksData){
+                return;
+            }
+            lastTasksData = event.data;
+
+            const tasks = JSON.parse(event.data);
+            const doneCount = tasks.filter(task => task.done).length;
+            taskCount.textContent = `${doneCount} / ${tasks.length} validées`;
+
+            taskList.innerHTML = "";
+            for (const task of tasks){
+                const li = document.createElement("li");
+                li.className = "task";
+
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.checked = Boolean(task.done);
+                checkbox.onchange = function(){
+                    callApi(`/todo/toggle_task/${task.id}`, {method: "PATCH"});
+                };
+                li.appendChild(checkbox);
+
+                const label = document.createElement("span");
+                label.className = "label";
+                label.textContent = task.name;
+                if (task.done){
+                    label.style.textDecoration = "line-through";
+                }
+                li.appendChild(label);
+                li.appendChild(makeButton("Supprimer", function(){
+                    callApi(`/todo/delete_task/${task.id}`, {method: "DELETE"});
+                }));
+                taskList.appendChild(li);
+            }
+        };
+
+        // === HABITS ===
+        const habitList = document.getElementById("habitList");
+        const habitForm = document.getElementById("habitForm");
+        const habitInput = document.getElementById("habitInput");
+        let lastHabitsData = "";
+
+        habitForm.onsubmit = async function(event){
+            event.preventDefault();
+            const result = await callApi("/habits/add_habit", {method: "POST", body: new FormData(habitForm)});
+            if (result){
+                habitInput.value = "";
+            }
+        };
+
+        const habitsSource = new EventSource("/habits/get_curr_habits");
+        habitsSource.onmessage = function(event){
+            if (event.data === lastHabitsData){
+                return;
+            }
+            lastHabitsData = event.data;
+
+            habitList.innerHTML = "";
+            for (const habit of JSON.parse(event.data)){
+                const li = document.createElement("li");
+                const label = document.createElement("span");
+                label.className = "label";
+                label.textContent = `${habit.name} - streak : ${habit.streak}`;
+                li.appendChild(label);
+                li.appendChild(makeButton("Fait aujourd'hui", function(){
+                    callApi(`/habits/add_log/${habit.id}`, {method: "POST"});
+                }));
+                li.appendChild(makeButton("Annuler aujourd'hui", function(){
+                    callApi(`/habits/delete_today_log/${habit.id}`, {method: "DELETE"});
+                }));
+                li.appendChild(makeButton("Supprimer", function(){
+                    if (confirm(`Supprimer "${habit.name}" et tout son historique ?`)){
+                        callApi(`/habits/delete_habit/${habit.id}`, {method: "DELETE"});
+                    }
+                }));
+                habitList.appendChild(li);
+            }
+        };
+    </script>
+</body>
+</html>

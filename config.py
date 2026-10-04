@@ -39,3 +39,4 @@ CAL_TXT_PATH = BASE_DIR / "data" / "calendar.txt"
 ## front
 INDEX_PATH = BASE_DIR / "front" / "index.html"
 JS_SCRIPT_PATH = BASE_DIR / "front" / "script.js"
+PHONE_PATH = BASE_DIR / "front" / "phone.html"

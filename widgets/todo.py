@@ -56,7 +56,26 @@ async def add_task(task : Annotated[str, Form()]):
         now = datetime.now().strftime("%H:%M:%S")
         command = "INSERT INTO task (name, created_at) VALUES (?, ?)"
         cur.execute(command, (task,now))
-        return {"id": cur.lastrowid, "name": task, "created_at": now}
+        return {"id": cur.lastrowid, "name": task, "created_at": now, "done": 0}
+
+
+@router.patch("/toggle_task/{id}")
+async def toggle_task(id: int):
+    """
+    Check or uncheck a task (done 0 <-> 1) and return it
+    """
+    with get_db() as con:
+        cur = con.cursor()
+        cur.execute("SELECT * FROM task WHERE id = ?", (id,))
+        task = cur.fetchone()
+        if task is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Task not found"
+            )
+        new_done = 0 if task["done"] else 1
+        cur.execute("UPDATE task SET done = ? WHERE id = ?", (new_done, id))
+        return {**dict(task), "done": new_done}
 
 
 @router.delete("/delete_task/{id}")
