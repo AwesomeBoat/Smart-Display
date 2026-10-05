@@ -1,0 +1,162 @@
+/* =====================================================================
+   Display — the screen layout (1920×1080 stage) and display-only widgets
+   The design is drawn for a 1920×1080 canvas. display.js scales the whole
+   stage to the real screen, so every size below is in "design pixels".
+   ===================================================================== */
+
+body { overflow: hidden; }
+
+/* ---------- Stage: the 1920×1080 canvas, scaled by display.js ---------- */
+.sd-stage {
+  position: absolute;
+  left: 0; top: 0;
+  width: 1920px; height: 1080px;
+  transform-origin: 0 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* ---------- Zones: one absolutely placed box per widget ----------
+   Grid: 64px outer margins (space-8), 24px gutters (space-5).
+   The widgets fill their zone; the zone decides the size. */
+.zone { position: absolute; }
+.zone > .sd-glass { height: 100%; }
+
+/* top band, identical in both modes: clock + KPI tiles (400×220) */
+.zone--clock      { left: 64px;   top: 48px; width: 520px; }
+.zone--weather    { left: 608px;  top: 64px; width: 400px; height: 220px; }
+.zone--task-ring  { left: 1032px; top: 64px; width: 400px; height: 220px; }
+
+/* Jour: day timeline, then Tasks · Habits · Insight */
+[data-mode="jour"] .zone--best-streak { left: 1456px; top: 64px;  width: 400px;  height: 220px; }
+[data-mode="jour"] .zone--calendar    { left: 64px;   top: 316px; width: 1792px; height: 212px; }
+[data-mode="jour"] .zone--tasks       { left: 64px;   top: 560px; width: 560px;  height: 456px; }
+[data-mode="jour"] .zone--habits      { left: 648px;  top: 560px; width: 760px;  height: 456px; }
+[data-mode="jour"] .zone--insight     { left: 1432px; top: 560px; width: 424px;  height: 456px; }
+
+/* Semaine: the insight takes the 3rd tile, week grid on the left,
+   Habits (compact) and Tasks stacked on the right */
+[data-mode="semaine"] .zone--best-streak { display: none; }
+[data-mode="semaine"] .zone--insight     { left: 1456px; top: 64px;  width: 400px;  height: 220px; }
+[data-mode="semaine"] .zone--calendar    { left: 64px;   top: 316px; width: 1180px; height: 700px; }
+[data-mode="semaine"] .zone--habits      { left: 1268px; top: 316px; width: 588px;  height: 372px; }
+[data-mode="semaine"] .zone--tasks       { left: 1268px; top: 712px; width: 588px;  height: 304px; }
+
+/* ---------- KPI tiles ---------- */
+.sd-ring-row { display: flex; align-items: center; gap: var(--space-5); }
+.sd-ring-value { font-size: 44px; }
+.sd-streak-value { display: flex; align-items: baseline; gap: var(--space-3); }
+.sd-kpi-meta { margin-top: var(--space-3); }
+
+/* ---------- Tasks / Habits panels ---------- */
+.sd-tasks .sd-bar { margin-bottom: var(--space-4); }
+
+.sd-habits { --habit-name-width: 240px; }
+.sd-habits.sd-compact { --habit-name-width: 170px; }
+.sd-habits .sd-habit-name { flex: 0 0 var(--habit-name-width); }
+.sd-habits .sd-letters-row { margin-bottom: var(--space-2); }
+.sd-habits .sd-letters-row .sd-flame { visibility: hidden; } /* keeps the columns aligned */
+.sd-habits .sd-list { gap: var(--space-4); }
+
+/* ---------- Insight: tile variant (Semaine top band) ---------- */
+.sd-insight--tile .t-eyebrow { margin-bottom: 10px; }
+.sd-insight--tile p { font: 400 32px/38px var(--font-serif); }
+.sd-insight--tile .sd-insight-hint { margin-top: var(--space-3); }
+
+/* =====================================================================
+   AgendaDay — today as one horizontal timeline, 7h → 23h (Jour mode)
+   Positions are computed in agenda-day.js; this only styles the pieces.
+   ===================================================================== */
+.sd-head .sd-chips { display: flex; gap: var(--space-2); margin-left: auto; }
+.sd-head .sd-chips + .sd-aside { margin-left: 0; }
+
+.sd-timeline-rail {
+  position: absolute; left: 40px; right: 40px; top: 96px;
+  height: 2px; background: var(--glass-stroke);
+}
+.sd-timeline-hour {
+  position: absolute; top: 166px; width: 40px; margin-left: -20px; /* centred on its hour */
+  text-align: center; font-size: 15px; color: var(--ink-faint);
+}
+.sd-timeline-event {
+  position: absolute; top: 76px; height: 44px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 12px; overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--glass-fill-raised);
+  border: 1px solid var(--glass-stroke);
+}
+.sd-timeline-event i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.sd-timeline-event span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* overlapping events stack in two 20px rows */
+.sd-timeline-event--stacked { height: 20px; padding: 0 8px; font-size: 15px; }
+.sd-timeline-event--lane-1 { top: 100px; }
+.sd-timeline-event--now { border-color: var(--accent-line); box-shadow: var(--glow-accent); }
+
+.sd-timeline-now {
+  position: absolute; top: 60px; width: 2px; height: 96px; margin-left: -1px;
+  background: var(--accent); box-shadow: var(--glow-dot);
+}
+.sd-timeline-now-label { position: absolute; top: 34px; font-size: 15px; transform: translateX(-50%); }
+
+/* =====================================================================
+   AgendaWeek — Monday → Sunday grid, 8h → 22h (Semaine mode)
+   ===================================================================== */
+.sd-week-grid { position: relative; height: 100%; }
+.sd-week-grid > .sd-head { position: absolute; left: 0; right: 0; top: 0; }
+
+.sd-week-today {
+  position: absolute; top: 44px; bottom: 0;
+  border-radius: var(--radius-md); background: var(--glass-fill);
+}
+
+/* day labels "Lun 5": past faint, future muted, today accent with a pill */
+.sd-week-label {
+  position: absolute; top: 50px;
+  display: flex; align-items: center; justify-content: center; gap: var(--space-2);
+  color: var(--ink-muted);
+}
+.sd-week-label b { display: inline-grid; place-items: center; min-width: 34px; height: 34px; font-weight: inherit; }
+.sd-week-label--past { color: var(--ink-faint); }
+.sd-week-label--today { color: var(--accent); }
+.sd-week-label--today b {
+  padding: 0 6px; border-radius: var(--radius-pill);
+  background: var(--accent); color: var(--on-accent); font-weight: 500;
+}
+
+/* hour lines and labels */
+.sd-week-hourline { position: absolute; left: 56px; right: 0; height: 1px; background: var(--glass-stroke); opacity: .5; }
+.sd-week-hour {
+  position: absolute; left: 0; width: 44px; margin-top: -10px;
+  text-align: right; font-size: 15px; line-height: 20px; color: var(--ink-faint);
+}
+
+/* all-day events: chips under the day labels */
+.sd-week-chip {
+  position: absolute; top: 96px;
+  padding: 2px 10px; font-size: 15px;
+  white-space: nowrap; overflow: hidden;
+}
+.sd-week-chip span { overflow: hidden; text-overflow: ellipsis; }
+
+/* timed events */
+.sd-week-event {
+  position: absolute; padding: 5px 9px; overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--glass-fill-raised);
+  border: 1px solid var(--glass-stroke);
+}
+.sd-week-event--past { opacity: .45; }
+.sd-week-event--now { border-color: var(--accent-line); box-shadow: var(--glow-accent); }
+.sd-week-event-title { display: flex; align-items: center; gap: 7px; font-size: 16px; line-height: 20px; white-space: nowrap; }
+.sd-week-event-title i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.sd-week-event-title span { overflow: hidden; text-overflow: ellipsis; }
+.sd-week-event-time { font-size: 14px; line-height: 18px; color: var(--ink-muted); }
+.sd-week-event--now .sd-week-event-time { color: var(--accent); }
+
+/* "now" line across today's column */
+.sd-week-now-dot {
+  position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px;
+  border-radius: 50%; background: var(--accent); box-shadow: var(--glow-dot);
+}
+.sd-week-now-line { position: absolute; height: 2px; margin-top: -1px; background: var(--accent); box-shadow: var(--glow-dot); }

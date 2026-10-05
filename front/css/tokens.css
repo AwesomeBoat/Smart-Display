@@ -1,0 +1,140 @@
+/* =====================================================================
+   Design tokens — Smart Display design system
+   Every colour, size and shadow used by the display and the phone.
+   Never hard-code a value in another file: use these variables.
+
+   Themes change colours only. Pick one with data-theme on <html>:
+   glacier (default) · braise · ivoire
+   ===================================================================== */
+
+/* ---------- Theme-independent tokens ---------- */
+:root {
+  /* type families */
+  --font-sans: Outfit, "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-serif: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+
+  /* spacing */
+  --space-1: 4px;   /* icon to its label */
+  --space-2: 8px;   /* title to its meta line */
+  --space-3: 12px;  /* between list rows */
+  --space-4: 16px;  /* header to list */
+  --space-5: 24px;  /* panel padding, gutter between panels */
+  --space-6: 32px;  /* between widget groups */
+  --space-7: 48px;  /* breathing room around clock / insight */
+  --space-8: 64px;  /* safe margin from the screen edge */
+
+  /* radii */
+  --radius-sm: 10px;    /* chips, event blocks, inputs */
+  --radius-md: 16px;    /* phone buttons, today's column */
+  --radius-lg: 24px;    /* glass panels */
+  --radius-pill: 999px; /* bars, rings, dots, avatars */
+
+  /* light (not depth) */
+  --glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  --blur-glass: 24px;
+}
+
+/* ---------- Glacier (default): ice-blue accent, cool inks ---------- */
+:root,
+[data-theme="glacier"] {
+  --bg: #000000;
+  --phone-bg: #07090d;
+  --glass-fill: rgba(255, 255, 255, 0.05);
+  --glass-fill-raised: rgba(255, 255, 255, 0.09);
+  --glass-stroke: rgba(255, 255, 255, 0.12);
+  --ink: #f4f6fa;
+  --ink-muted: #a3abb8;
+  --ink-faint: #79818f;
+  --accent: #6cb4ff;
+  --accent-line: rgba(108, 180, 255, 0.55);
+  --accent-soft: rgba(108, 180, 255, 0.18);
+  --accent-glow: rgba(108, 180, 255, 0.6);
+  --on-accent: #04111f;
+  --success: #4ade9b;
+  --on-success: #03140b;
+  --danger: #ff9a76;
+  --event-blue: #5aa9ff;
+  --event-amber: #ffb547;
+  --event-violet: #a78bfa;
+  --event-mint: #4ade9b;
+  --focus: #9fd0ff;
+  --glow-accent: 0 0 32px rgba(108, 180, 255, 0.28);
+  --glow-dot: 0 0 12px rgba(108, 180, 255, 0.6);
+}
+
+/* ---------- Braise: ember-orange accent, warm inks ---------- */
+[data-theme="braise"] {
+  --bg: #000000;
+  --phone-bg: #0c0907;
+  --glass-fill: rgba(255, 240, 225, 0.05);
+  --glass-fill-raised: rgba(255, 240, 225, 0.09);
+  --glass-stroke: rgba(255, 225, 200, 0.13);
+  --ink: #fbf4ec;
+  --ink-muted: #b8aa9a;
+  --ink-faint: #8a7d6e;
+  --accent: #ff9f5a;
+  --accent-line: rgba(255, 159, 90, 0.55);
+  --accent-soft: rgba(255, 159, 90, 0.18);
+  --accent-glow: rgba(255, 159, 90, 0.6);
+  --on-accent: #1f0d02;
+  --success: #4ade9b;
+  --on-success: #03140b;
+  --danger: #ff7f96; /* rose, so it can't be mistaken for the accent */
+  --event-blue: #6aa8ff;
+  --event-amber: #ffd166;
+  --event-violet: #c79bff;
+  --event-mint: #5fd4a8;
+  --focus: #ffc08f;
+  --glow-accent: 0 0 32px rgba(255, 159, 90, 0.28);
+  --glow-dot: 0 0 12px rgba(255, 159, 90, 0.6);
+}
+
+/* ---------- Ivoire: warm-ivory accent, near-monochrome ---------- */
+[data-theme="ivoire"] {
+  --bg: #000000;
+  --phone-bg: #0a0a09;
+  --glass-fill: rgba(255, 250, 240, 0.05);
+  --glass-fill-raised: rgba(255, 250, 240, 0.09);
+  --glass-stroke: rgba(255, 248, 235, 0.13);
+  --ink: #f7f3ea;
+  --ink-muted: #b2ab9e;
+  --ink-faint: #837c70;
+  --accent: #efe3c8;
+  --accent-line: rgba(239, 227, 200, 0.5);
+  --accent-soft: rgba(239, 227, 200, 0.14);
+  --accent-glow: rgba(239, 227, 200, 0.45);
+  --on-accent: #1a1508;
+  --success: #9ad8b0;
+  --on-success: #08160d;
+  --danger: #ff9a76;
+  --event-blue: #9cc2e8;
+  --event-amber: #e8c99a;
+  --event-violet: #c4b5e3;
+  --event-mint: #a9d8bf;
+  --focus: #fff4dc;
+  --glow-accent: 0 0 32px rgba(239, 227, 200, 0.2);
+  --glow-dot: 0 0 12px rgba(239, 227, 200, 0.45);
+}
+
+/* =====================================================================
+   Type scale — one class per text style
+   ===================================================================== */
+
+/* Display (read from ~2 m): primary content never below t-item,
+   secondary never below t-meta */
+.t-clock    { font: 200 150px/1 var(--font-sans); letter-spacing: -0.02em; }
+.t-seconds  { font: 300 44px/1 var(--font-sans); }
+.t-date     { font: 300 32px/40px var(--font-sans); }
+.t-temp     { font: 200 72px/1 var(--font-sans); }
+.t-title    { font: 500 22px/28px var(--font-sans); }
+.t-item     { font: 400 24px/32px var(--font-sans); }
+.t-meta     { font: 400 18px/24px var(--font-sans); }
+.t-eyebrow  { font: 500 15px/20px var(--font-sans); letter-spacing: 0.14em; text-transform: uppercase; }
+
+/* Insight: the only serif text */
+.t-insight-sm { font: 400 40px/48px var(--font-serif); }
+
+/* Phone */
+.t-phone-title { font: 600 20px/28px var(--font-sans); }
+.t-phone-body  { font: 400 16px/24px var(--font-sans); }
+.t-phone-small { font: 400 14px/20px var(--font-sans); }

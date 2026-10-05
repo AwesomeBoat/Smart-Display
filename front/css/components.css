@@ -1,0 +1,142 @@
+/* =====================================================================
+   Components — the shared building blocks (display + phone)
+   Copied from the design system's bundle.css. Every value is a token
+   from tokens.css. Class prefix: sd- (Smart Display).
+   ===================================================================== */
+
+/* ---------- Base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Utilities ---------- */
+.sd-num    { font-variant-numeric: tabular-nums; } /* digits don't jump on update */
+.sd-muted  { color: var(--ink-muted); }
+.sd-faint  { color: var(--ink-faint); }
+.sd-accent { color: var(--accent); }
+
+/* ---------- Icons: 24px line icons, 1.6 stroke, currentColor ---------- */
+.sd-ico {
+  width: 24px; height: 24px; flex: none;
+  fill: none; stroke: currentColor; stroke-width: 1.6;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.sd-ico--lg { width: 40px; height: 40px; stroke-width: 1.4; }
+
+/* ---------- Glass panel: every widget sits in one ---------- */
+.sd-glass {
+  position: relative;
+  background: var(--glass-fill);
+  border: 1px solid var(--glass-stroke);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-edge);
+  padding: var(--space-5);
+  -webkit-backdrop-filter: blur(var(--blur-glass));
+  backdrop-filter: blur(var(--blur-glass));
+}
+.sd-glass--raised { background: var(--glass-fill-raised); }
+/* the ONE glowing panel of the screen (the insight) */
+.sd-glass--active { border-color: var(--accent-line); box-shadow: var(--glass-edge), var(--glow-accent); }
+/* no data yet / data too old: body dimmed, header kept */
+.sd-glass--stale > :not(.sd-head) { opacity: .45; }
+
+/* panel header: icon + title + optional aside on the right */
+.sd-head { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); color: var(--ink); }
+.sd-head .sd-ico { color: var(--ink-muted); }
+.sd-head .sd-aside { margin-left: auto; color: var(--ink-muted); }
+.sd-stale-tag { margin-left: auto; color: var(--ink-faint); white-space: nowrap; }
+
+/* skeleton bar shown before the first data arrives (never an empty box) */
+.sd-skel { display: block; height: 18px; border-radius: var(--radius-pill); background: var(--glass-fill-raised); }
+.sd-skel + .sd-skel { margin-top: var(--space-3); }
+
+/* empty state: one muted line, never an illustration */
+.sd-empty { margin: 0; color: var(--ink-muted); }
+
+/* ---------- Clock ---------- */
+.sd-clock { display: flex; flex-direction: column; gap: var(--space-2); }
+.sd-clock-time { display: flex; align-items: baseline; gap: var(--space-3); font-variant-numeric: tabular-nums; }
+.sd-clock-time .t-seconds { color: var(--ink-muted); }
+.sd-clock .t-date { color: var(--ink-muted); }
+.sd-clock .t-date::first-letter { text-transform: uppercase; }
+
+/* ---------- Weather ---------- */
+.sd-weather { display: flex; align-items: center; gap: var(--space-5); }
+.sd-weather-icon { color: var(--ink); }
+.sd-weather-body { display: flex; flex-direction: column; gap: var(--space-2); }
+.sd-weather-line { display: flex; align-items: center; gap: var(--space-2); color: var(--ink-muted); }
+.sd-weather-line .sd-ico { width: 20px; height: 20px; }
+
+/* ---------- Lists (tasks, habits) ---------- */
+.sd-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.sd-row { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+.sd-row > .sd-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sd-more { color: var(--ink-faint); }
+
+/* check ring: empty = to do, filled success + glyph = done (never colour alone) */
+.sd-check { width: 26px; height: 26px; flex: none; border-radius: 50%; border: 1.5px solid var(--ink-faint); display: grid; place-items: center; }
+.sd-check svg { width: 16px; height: 16px; fill: none; stroke: var(--on-success); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; visibility: hidden; }
+.sd-check--done { background: var(--success); border-color: var(--success); }
+.sd-check--done svg { visibility: visible; }
+.sd-row--done .sd-label { color: var(--ink-muted); text-decoration: line-through; text-decoration-color: var(--ink-faint); text-decoration-thickness: 1px; }
+
+/* progress bar */
+.sd-bar { height: 4px; border-radius: var(--radius-pill); background: var(--glass-stroke); overflow: hidden; }
+.sd-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--accent); box-shadow: var(--glow-dot); }
+
+/* ---------- Progress ring (Tâches KPI tile) ---------- */
+.sd-ring { position: relative; display: grid; place-items: center; }
+.sd-ring svg { position: absolute; inset: 0; transform: rotate(-90deg); } /* start at 12 o'clock */
+.sd-ring .track { fill: none; stroke: var(--glass-stroke); }
+.sd-ring .fill { fill: none; stroke: var(--accent); stroke-linecap: round; filter: drop-shadow(0 0 6px var(--accent-glow)); }
+
+/* ---------- Agenda shared: event colours (picked by a hash of the title) ---------- */
+.dot-blue   { background: var(--event-blue); }
+.dot-amber  { background: var(--event-amber); }
+.dot-violet { background: var(--event-violet); }
+.dot-mint   { background: var(--event-mint); }
+
+/* all-day event chip */
+.sd-chip { display: inline-flex; align-items: center; gap: var(--space-2); padding: 4px 12px; border-radius: var(--radius-sm); background: var(--glass-fill-raised); color: var(--ink); }
+.sd-chip i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+
+/* ---------- Insight: the intelligent layer speaking ---------- */
+.sd-insight { max-width: 920px; }
+.sd-insight .t-eyebrow { color: var(--ink-muted); margin-bottom: var(--space-4); display: block; }
+.sd-insight p { margin: 0; color: var(--ink); }
+.sd-insight em { font-style: italic; color: var(--accent); } /* the ask */
+.sd-rule { width: 64px; height: 2px; margin-top: var(--space-5); border-radius: 2px; background: var(--accent); box-shadow: var(--glow-dot); }
+.sd-insight-hint { margin-top: var(--space-4); color: var(--ink-faint); display: flex; align-items: center; gap: var(--space-2); }
+
+/* ---------- Habits week view: Mon→Sun dots + flame streak ---------- */
+.sd-week { display: inline-flex; gap: 16px; flex: none; }
+.sd-week-letters span { width: 32px; text-align: center; color: var(--ink-faint); }
+.sd-week-letters span.sd-accent { color: var(--accent); }
+
+.sd-day { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+.sd-day svg { width: 18px; height: 18px; fill: none; stroke: var(--on-success); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.sd-day--done { background: var(--success); }                                                       /* logged */
+.sd-day--done.sd-day--is-today { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--accent-line); }  /* logged today */
+.sd-day--missed { border: 1.5px solid var(--ink-faint); }                                           /* past, not logged */
+.sd-day--today { border: 2px solid var(--accent); box-shadow: var(--glow-dot); }                    /* today, not yet */
+.sd-day--future::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--glass-stroke); }
+
+/* streak: flame + number of days; "hot" from 3 days */
+.sd-flame { margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; min-width: 92px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.sd-flame b { font-weight: 500; color: var(--ink); }
+.sd-flame svg { width: 30px; height: 30px; color: var(--accent); fill: none; stroke-width: 1.8; }
+.sd-flame--hot svg { fill: var(--accent); filter: drop-shadow(0 0 6px var(--accent-glow)); }
+.sd-flame--hot b { color: var(--accent); }
+
+/* compact variant (Semaine mode's narrow column) */
+.sd-compact .sd-week { gap: 10px; }
+.sd-compact .sd-day,
+.sd-compact .sd-week-letters span { width: 28px; }
+.sd-compact .sd-day { height: 28px; }
+.sd-compact .sd-flame { min-width: 80px; }

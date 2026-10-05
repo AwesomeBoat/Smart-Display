@@ -1,305 +1,87 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="glacier">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Display - Télécommande</title>
-    <style>
-        body { font-family: sans-serif; padding: 1rem; max-width: 32rem; margin: 0 auto; }
-        h2 { margin-top: 2rem; }
-        ul { padding: 0; list-style: none; }
-        li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid #ddd; }
-        .label { flex: 1 1 100%; }
-        li.task .label { flex: 1; }
-        input[type="checkbox"] { width: 1.5rem; height: 1.5rem; }
-        form { display: flex; gap: 0.5rem; }
-        input[type="text"], input[type="url"] { flex: 1; font-size: 1rem; padding: 0.6rem; }
-        button { font-size: 1rem; padding: 0.6rem 0.8rem; }
-        #message { color: #b00020; min-height: 1.5rem; }
-        select { font-size: 1rem; padding: 0.4rem; }
-        .row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
-        #mirrorStatus { color: #555; margin: 0.5rem 0 0; }
-        details { margin-top: 0.75rem; }
-        summary { cursor: pointer; padding: 0.4rem 0; }
-        #profileForm { flex-direction: column; }
-    </style>
+    <title>Smart Display · Télécommande</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600&display=swap">
+
+    <link rel="stylesheet" href="/static/css/tokens.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <link rel="stylesheet" href="/static/css/phone.css">
 </head>
 <body>
-    <p id="message"></p>
+    <div class="sd-phone">
+        <!-- errors from the API, in words -->
+        <p id="message" class="sd-error t-phone-small" role="alert"></p>
 
-    <label for="profileSelect">Profil :</label>
-    <select id="profileSelect"></select>
-    <p id="mirrorStatus"></p>
-    <div class="row">
-        <button id="showOnMirrorBtn">Afficher sur l'écran</button>
-        <button id="deleteProfileBtn">Supprimer ce profil</button>
-    </div>
-    <details id="profileDetails">
-        <summary>Nouveau profil</summary>
-        <form id="profileForm">
-            <input type="text" name="name" placeholder="Nom" required>
-            <input type="url" name="ical_url" placeholder="URL iCal (optionnel)">
-            <button type="submit">Créer</button>
+        <!-- ===== Profile card ===== -->
+        <section class="sd-glass">
+            <div class="sd-profile-row">
+                <span id="profileAvatar" class="sd-avatar" aria-hidden="true"></span>
+                <select id="profileSelect" class="sd-select" aria-label="Profil"></select>
+            </div>
+
+            <p id="displayStatus" class="sd-status t-phone-small sd-muted"></p>
+
+            <!-- how the display looks when this profile is shown -->
+            <div class="sd-settings-row">
+                <select id="modeSelect" class="sd-select" aria-label="Affichage">
+                    <option value="jour">Jour</option>
+                    <option value="semaine">Semaine</option>
+                </select>
+                <select id="themeSelect" class="sd-select" aria-label="Thème">
+                    <option value="glacier">Glacier</option>
+                    <option value="braise">Braise</option>
+                    <option value="ivoire">Ivoire</option>
+                </select>
+            </div>
+
+            <div class="sd-actions">
+                <button id="showOnDisplayBtn" class="sd-btn sd-btn--primary" type="button">
+                    <svg class="sd-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                    Afficher sur l'écran
+                </button>
+                <button id="deleteProfileBtn" class="sd-btn sd-btn--ghost sd-btn--danger" type="button">
+                    <svg class="sd-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13"/></svg>
+                    Supprimer ce profil
+                </button>
+            </div>
+        </section>
+
+        <details id="profileDetails" class="sd-disclosure">
+            <summary class="t-phone-body">Nouveau profil</summary>
+            <form id="profileForm" class="sd-form sd-form--stack">
+                <input class="sd-input" type="text" name="name" placeholder="Nom" required>
+                <input class="sd-input" type="url" name="ical_url" placeholder="URL iCal (optionnel)">
+                <button class="sd-btn sd-btn--primary" type="submit">Créer</button>
+            </form>
+        </details>
+
+        <!-- ===== Tasks ===== -->
+        <h2 class="t-phone-title">Tâches <span id="taskCount" class="t-phone-small sd-muted sd-num"></span></h2>
+        <form id="taskForm" class="sd-form">
+            <input id="taskInput" class="sd-input" type="text" name="task" placeholder="Nouvelle tâche" required>
+            <button class="sd-btn sd-btn--icon sd-btn--primary" type="submit" aria-label="Ajouter la tâche">
+                <svg class="sd-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
         </form>
-    </details>
+        <ul id="taskList" class="sd-list sd-plist"></ul>
 
-    <h2>Tâches</h2>
-    <form id="taskForm">
-        <input type="text" id="taskInput" name="task" placeholder="Nouvelle tâche" required>
-        <button type="submit">Ajouter</button>
-    </form>
-    <p id="taskCount"></p>
-    <ul id="taskList"></ul>
+        <!-- ===== Habits ===== -->
+        <h2 class="t-phone-title">Habitudes</h2>
+        <form id="habitForm" class="sd-form">
+            <input id="habitInput" class="sd-input" type="text" name="name" placeholder="Nouvelle habitude" required>
+            <button class="sd-btn sd-btn--icon sd-btn--primary" type="submit" aria-label="Ajouter l'habitude">
+                <svg class="sd-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+        </form>
+        <ul id="habitList" class="sd-list sd-plist"></ul>
+    </div>
 
-    <h2>Habitudes</h2>
-    <form id="habitForm">
-        <input type="text" id="habitInput" name="name" placeholder="Nouvelle habitude" required>
-        <button type="submit">Ajouter</button>
-    </form>
-    <ul id="habitList"></ul>
-
-    <script>
-        // All URLs are relative: the browser adds the address of the server that served this page
-        const message = document.getElementById("message");
-
-        // Send a request to the API, show an error message if it fails
-        async function callApi(url, options){
-            message.textContent = "";
-            try {
-                const response = await fetch(url, options);
-                if (!response.ok){
-                    const error = await response.json();
-                    message.textContent = `Erreur ${response.status} : ${error.detail}`;
-                    return null;
-                }
-                // 204 = success with no body (ex: delete_profile), nothing to parse
-                if (response.status === 204){
-                    return true;
-                }
-                return await response.json();
-            } catch (e) {
-                message.textContent = "Serveur injoignable";
-                return null;
-            }
-        }
-
-        function makeButton(text, onclick){
-            const button = document.createElement("button");
-            button.textContent = text;
-            button.onclick = onclick;
-            return button;
-        }
-
-        // === TASKS ===
-        const taskList = document.getElementById("taskList");
-        const taskCount = document.getElementById("taskCount");
-        const taskForm = document.getElementById("taskForm");
-        const taskInput = document.getElementById("taskInput");
-        let lastTasksData = "";
-        let tasksSource = null;
-
-        taskForm.onsubmit = async function(event){
-            event.preventDefault();
-            if (!profileId){
-                return;
-            }
-            const result = await callApi(`/todo/add_task/${profileId}`, {method: "POST", body: new FormData(taskForm)});
-            if (result){
-                taskInput.value = "";
-            }
-        };
-
-        // the server pushes the list of this phone's profile: every change (from any device) is displayed
-        function startTaskStream(id){
-            // close the previous stream, else each profile switch stacks one more
-            if (tasksSource){
-                tasksSource.close();
-            }
-            lastTasksData = "";
-            tasksSource = new EventSource(`/todo/stream_tasks/${id}`);
-            tasksSource.onmessage = renderTasks;
-        }
-
-        function renderTasks(event){
-            if (event.data === lastTasksData){
-                return;
-            }
-            lastTasksData = event.data;
-
-            const tasks = JSON.parse(event.data);
-            const doneCount = tasks.filter(task => task.done).length;
-            taskCount.textContent = `${doneCount} / ${tasks.length} validées`;
-
-            taskList.innerHTML = "";
-            for (const task of tasks){
-                const li = document.createElement("li");
-                li.className = "task";
-
-                const checkbox = document.createElement("input");
-                checkbox.type = "checkbox";
-                checkbox.checked = Boolean(task.done);
-                checkbox.onchange = function(){
-                    callApi(`/todo/toggle_task/${task.id}`, {method: "PATCH"});
-                };
-                li.appendChild(checkbox);
-
-                const label = document.createElement("span");
-                label.className = "label";
-                label.textContent = task.name;
-                if (task.done){
-                    label.style.textDecoration = "line-through";
-                }
-                li.appendChild(label);
-                li.appendChild(makeButton("Supprimer", function(){
-                    callApi(`/todo/delete_task/${task.id}`, {method: "DELETE"});
-                }));
-                taskList.appendChild(li);
-            }
-        }
-
-        // === HABITS ===
-        const habitList = document.getElementById("habitList");
-        const habitForm = document.getElementById("habitForm");
-        const habitInput = document.getElementById("habitInput");
-        let lastHabitsData = "";
-        let habitsSource = null;
-
-        habitForm.onsubmit = async function(event){
-            event.preventDefault();
-            if (!profileId){
-                return;
-            }
-            const result = await callApi(`/habits/add_habit/${profileId}`, {method: "POST", body: new FormData(habitForm)});
-            if (result){
-                habitInput.value = "";
-            }
-        };
-
-        // same as tasks: one stream per profile, closed on profile switch
-        function startHabitStream(id){
-            if (habitsSource){
-                habitsSource.close();
-            }
-            lastHabitsData = "";
-            habitsSource = new EventSource(`/habits/stream_habits/${id}`);
-            habitsSource.onmessage = renderHabits;
-        }
-
-        function renderHabits(event){
-            if (event.data === lastHabitsData){
-                return;
-            }
-            lastHabitsData = event.data;
-
-            habitList.innerHTML = "";
-            for (const habit of JSON.parse(event.data)){
-                const li = document.createElement("li");
-                const label = document.createElement("span");
-                label.className = "label";
-                label.textContent = `${habit.name} - streak : ${habit.streak}`;
-                li.appendChild(label);
-                li.appendChild(makeButton("Fait aujourd'hui", function(){
-                    callApi(`/habits/add_log/${habit.id}`, {method: "POST"});
-                }));
-                li.appendChild(makeButton("Annuler aujourd'hui", function(){
-                    callApi(`/habits/delete_today_log/${habit.id}`, {method: "DELETE"});
-                }));
-                li.appendChild(makeButton("Supprimer", function(){
-                    if (confirm(`Supprimer "${habit.name}" et tout son historique ?`)){
-                        callApi(`/habits/delete_habit/${habit.id}`, {method: "DELETE"});
-                    }
-                }));
-                habitList.appendChild(li);
-            }
-        }
-
-        // === PROFILE ===
-        // each phone remembers its own profile in localStorage (survives page reload)
-        const profileSelect = document.getElementById("profileSelect");
-        const mirrorStatus = document.getElementById("mirrorStatus");
-        const profileDetails = document.getElementById("profileDetails");
-        const profileForm = document.getElementById("profileForm");
-        // always a string (comes from the select or localStorage)
-        let profileId = null;
-
-        function useProfile(id){
-            profileId = id;
-            localStorage.setItem("profileId", id);
-            startTaskStream(id);
-            startHabitStream(id);
-        }
-
-        // (re)build the select from the server, called at start and after each profile change
-        async function loadProfiles(){
-            const profiles = await callApi("/profile/get_all_profiles");
-            if (!profiles){
-                return;
-            }
-            profileSelect.innerHTML = "";
-            if (profiles.length === 0){
-                message.textContent = "Aucun profil";
-                return;
-            }
-            for (const profile of profiles){
-                const option = document.createElement("option");
-                option.value = profile.id;
-                option.textContent = profile.active ? `${profile.name} (écran)` : profile.name;
-                profileSelect.appendChild(option);
-            }
-            const active = profiles.find(profile => profile.active);
-            mirrorStatus.textContent = active ? `Sur l'écran : ${active.name}` : "";
-
-            // keep the current profile, else the saved one
-            // it may have been deleted -> fall back to the first one
-            const wanted = profileId ?? localStorage.getItem("profileId");
-            const exists = profiles.some(profile => String(profile.id) === wanted);
-            const id = exists ? wanted : String(profiles[0].id);
-            profileSelect.value = id;
-            // only restart the streams if the profile really changed
-            if (id !== profileId){
-                useProfile(id);
-            }
-        }
-
-        profileSelect.onchange = function(){
-            useProfile(profileSelect.value);
-        };
-
-        // show this phone's profile on the mirror
-        document.getElementById("showOnMirrorBtn").onclick = async function(){
-            const result = await callApi(`/profile/set_active/${profileId}`, {method: "PATCH"});
-            if (result){
-                loadProfiles();
-            }
-        };
-
-        // the server refuses (409) to delete the profile shown on the mirror: message displayed by callApi
-        document.getElementById("deleteProfileBtn").onclick = async function(){
-            const name = profileSelect.selectedOptions[0]?.textContent;
-            if (!confirm(`Supprimer le profil "${name}" avec toutes ses tâches et habitudes ?`)){
-                return;
-            }
-            const result = await callApi(`/profile/delete_profile/${profileId}`, {method: "DELETE"});
-            if (result){
-                loadProfiles();
-            }
-        };
-
-        // create a profile and switch this phone to it
-        profileForm.onsubmit = async function(event){
-            event.preventDefault();
-            const result = await callApi("/profile/create_profile", {method: "POST", body: new FormData(profileForm)});
-            if (result){
-                profileForm.reset();
-                profileDetails.open = false;
-                profileId = String(result.id);
-                localStorage.setItem("profileId", profileId);
-                await loadProfiles();
-                useProfile(profileId);
-            }
-        };
-
-        loadProfiles();
-    </script>
+    <script type="module" src="/static/js/phone.js"></script>
 </body>
 </html>

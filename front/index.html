@@ -1,29 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr" data-theme="glacier">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    
+    <title>Smart Display</title>
+
+    <!-- Fonts: Outfit (everything) + Instrument Serif (the insight only) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap">
+
+    <!-- Design system: tokens → shared components → screen layout -->
+    <link rel="stylesheet" href="/static/css/tokens.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <link rel="stylesheet" href="/static/css/display.css">
 </head>
 <body>
-    <p id="clock">--:--:--</p>
-    <p id="weather"></p>
-    
-    <p id="taskCount"></p>
+    <!--
+        The 1920×1080 stage, scaled to the screen by display.js.
+        Each zone is an empty box placed by display.css (per mode);
+        display.js creates the right widget inside it.
+        Black = nothing lit: only the widgets emit light.
+    -->
+    <main class="sd-stage" data-mode="jour">
+        <div class="zone zone--clock" data-zone="clock"></div>
+        <div class="zone zone--weather" data-zone="weather"></div>
+        <div class="zone zone--task-ring" data-zone="task-ring"></div>
+        <div class="zone zone--best-streak" data-zone="best-streak"></div>
+        <div class="zone zone--calendar" data-zone="calendar"></div>
+        <div class="zone zone--tasks" data-zone="tasks"></div>
+        <div class="zone zone--habits" data-zone="habits"></div>
+        <div class="zone zone--insight" data-zone="insight"></div>
+    </main>
 
-    <ul id="todoList">
-        
-    </ul>
-
-    <ul id="habitList">
-
-    </ul>
-
-    <ul id="calendarList">
-        
-    </ul>
-
-    <script src="script.js"></script>
+    <!-- type="module": display.js imports the widgets (no build step needed) -->
+    <script type="module" src="/static/js/display.js"></script>
 </body>
 </html>

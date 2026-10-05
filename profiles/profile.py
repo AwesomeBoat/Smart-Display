@@ -1,6 +1,11 @@
+import asyncio
+import json
+from typing import Annotated, Literal
+
 from fastapi import APIRouter, HTTPException, Form
+from fastapi.responses import StreamingResponse
+
 from data.db import get_db
-from typing import Annotated
 
 router = APIRouter(
     prefix="/profile",
@@ -12,10 +17,60 @@ def get_all_profiles() -> list[dict]:
     """Returns all profiles"""
     with get_db() as conn:
         cur = conn.cursor()
-        command = "SELECT id, name, active FROM profile"
+        command = "SELECT id, name, active, display_mode, theme FROM profile"
         cur.execute(command)
         profiles = cur.fetchall()
         return [dict(row) for row in profiles]
+
+
+# === DISPLAY SETTINGS (mode + theme of the display) ===
+# declared BEFORE "/{profile_id}", else FastAPI would read "get_curr_display" as an id
+
+DisplayMode = Literal["jour", "semaine"]
+Theme = Literal["glacier", "braise", "ivoire"]
+
+
+@router.get("/get_curr_display")
+async def get_curr_display():
+    """Stream the display settings of the active profile to the display (display.js)"""
+    return StreamingResponse(media_type="text/event-stream", content=get_display_data())
+
+
+async def get_display_data():
+    """Every second, send {"mode", "theme"} of the active profile"""
+    while True:
+        # check active profile at each loop so display follows profile switch
+        with get_db() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT display_mode, theme FROM profile WHERE active = 1")
+            row = cur.fetchone()
+        settings = {"mode": row["display_mode"], "theme": row["theme"]}
+        yield f"data: {json.dumps(settings)}\n\n"
+        # sleep after yield so the display gets its settings right away
+        await asyncio.sleep(1)
+
+
+@router.patch("/set_display/{profile_id}")
+def set_display(
+    profile_id: int,
+    display_mode: Annotated[DisplayMode, Form()],
+    theme: Annotated[Theme, Form()],
+):
+    """Change the display mode and theme of a profile, return the profile"""
+    # Literal: FastAPI answers 422 by itself if the value isn't in the list
+    with get_db() as conn:
+        if not check_if_profile_exists(conn, profile_id):
+            raise HTTPException(
+                status_code=404,
+                detail="Profile not found"
+            )
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE profile SET display_mode = ?, theme = ? WHERE id = ?",
+            (display_mode, theme, profile_id)
+        )
+        cur.execute("SELECT id, name, active, display_mode, theme FROM profile WHERE id = ?", (profile_id,))
+        return dict(cur.fetchone())
 
 
 @router.get("/{profile_id}")
@@ -29,7 +84,7 @@ def get_profile_by_id(profile_id: int):
                 detail="Profile not found"
             )
         cur = conn.cursor()
-        cur.execute("SELECT id, name, active FROM profile WHERE id=?", (profile_id,))
+        cur.execute("SELECT id, name, active, display_mode, theme FROM profile WHERE id=?", (profile_id,))
         return dict(cur.fetchone())
 
 @router.post("/create_profile")

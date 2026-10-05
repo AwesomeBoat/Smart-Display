@@ -35,6 +35,6 @@ DB_PATH = BASE_DIR / "data" / "display.db"
 CALENDARS_DIR = BASE_DIR / "data" / "calendars"
 CALENDARS_DIR.mkdir(parents=True, exist_ok=True)
 ## front
-INDEX_PATH = BASE_DIR / "front" / "index.html"
-JS_SCRIPT_PATH = BASE_DIR / "front" / "script.js"
-PHONE_PATH = BASE_DIR / "front" / "phone.html"
+FRONT_DIR = BASE_DIR / "front"
+INDEX_PATH = FRONT_DIR / "index.html"
+PHONE_PATH = FRONT_DIR / "phone.html"

@@ -168,16 +168,45 @@ def habit_streak(conn, habit_id: int):
     return streak(dates)
 
 
+def habit_week(conn, habit_id: int) -> list[bool]:
+    """
+    One bool per day of the current week, from Monday to today (included).
+    ex on a Wednesday: [True, False, True] -> done Monday and today
+    Days after today aren't sent, the display draws them as "future".
+    """
+    today = datetime.now().date()
+    monday = today - timedelta(days=today.weekday())
+    cur = conn.cursor()
+    # dates are stored as "YYYY-MM-DD" text, so comparing them as text works
+    cur.execute(
+        "SELECT date FROM habit_logs WHERE habit_id = ? AND date >= ?",
+        (habit_id, monday.isoformat())
+    )
+    logged = {row["date"] for row in cur.fetchall()}
+    return [
+        (monday + timedelta(days=i)).isoformat() in logged
+        for i in range(today.weekday() + 1)
+    ]
+
+
 # used by both streams (display + phone)
 # get the profile_id from the caller, don't check active profile here
 def fetch_habits(conn, profile_id: int) -> list[dict]:
-    """Return all habits of a given profile with their current streak"""
+    """Return all habits of a given profile with their streak and current week"""
     cur = conn.cursor()
     cur.execute("SELECT id, name FROM habits WHERE profile_id = ?", (profile_id,))
-    return [
-        {"id": row["id"], "name": row["name"], "streak": habit_streak(conn, row["id"])}
-        for row in cur.fetchall()
-    ]
+    habits = []
+    for row in cur.fetchall():
+        week = habit_week(conn, row["id"])
+        habits.append({
+            "id": row["id"],
+            "name": row["name"],
+            "streak": habit_streak(conn, row["id"]),
+            "week": week,
+            # last day of the week list = today
+            "done_today": week[-1],
+        })
+    return habits
 
 
 @router.get("/get_streak/{habit_id}")

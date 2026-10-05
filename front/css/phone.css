@@ -1,0 +1,91 @@
+/* =====================================================================
+   Phone remote (/phone) — same glass language, built for touch:
+   phone-bg instead of pure black, t-phone-* text, 44px minimum targets,
+   a visible focus ring.
+   ===================================================================== */
+
+html, body { background: var(--phone-bg); }
+
+.sd-phone {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: var(--space-5) 20px var(--space-6);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+.sd-phone h2 { margin: var(--space-6) 0 var(--space-3); }
+.sd-phone .sd-glass { padding: var(--space-4); }
+
+/* ---------- Buttons ---------- */
+.sd-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  min-height: 44px; padding: 0 var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-stroke);
+  background: var(--glass-fill-raised);
+  color: var(--ink);
+  font: 500 16px/1 var(--font-sans);
+  cursor: pointer;
+}
+.sd-btn--primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.sd-btn--ghost { background: none; border-color: transparent; color: var(--ink-muted); }
+.sd-btn--danger,
+.sd-btn--ghost.sd-btn--danger { color: var(--danger); }
+.sd-btn--icon { width: 44px; padding: 0; flex: none; }
+
+/* ---------- Inputs ---------- */
+.sd-input, .sd-select {
+  min-height: 44px; flex: 1; min-width: 0;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-stroke);
+  background: var(--glass-fill);
+  color: var(--ink);
+  font: 400 16px/24px var(--font-sans); /* 16px: iOS doesn't zoom */
+}
+.sd-input::placeholder { color: var(--ink-faint); }
+.sd-select option { background: var(--phone-bg); color: var(--ink); }
+
+.sd-btn:focus-visible,
+.sd-input:focus-visible,
+.sd-select:focus-visible,
+.sd-check:focus-visible,
+summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.sd-form { display: flex; gap: var(--space-2); }
+.sd-form--stack { flex-direction: column; }
+
+/* ---------- Rows ---------- */
+.sd-plist { gap: 0; margin-top: var(--space-2); }
+.sd-prow { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--glass-stroke); }
+.sd-prow:last-child { border-bottom: 0; }
+.sd-prow .sd-label { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.sd-prow.sd-row--done .sd-label { color: var(--ink-muted); text-decoration: line-through; text-decoration-color: var(--ink-faint); }
+
+/* the task check ring is a real button here: tap to toggle */
+button.sd-check { padding: 0; background: none; cursor: pointer; }
+button.sd-check.sd-check--done { background: var(--success); }
+
+/* ---------- Profile card ---------- */
+.sd-avatar {
+  width: 44px; height: 44px; flex: none;
+  display: grid; place-items: center;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--glass-stroke);
+  background: var(--glass-fill);
+  color: var(--ink); font-weight: 500; font-size: 18px;
+}
+.sd-avatar--active { border-color: var(--accent-line); box-shadow: var(--glow-dot); }
+
+.sd-profile-row { display: flex; align-items: center; gap: var(--space-3); }
+.sd-status { margin: var(--space-3) 0; display: flex; align-items: center; gap: var(--space-2); }
+.sd-settings-row { display: flex; gap: var(--space-2); margin-bottom: var(--space-3); }
+.sd-actions { display: grid; gap: var(--space-2); }
+
+/* "Nouveau profil" disclosure */
+.sd-disclosure { margin-top: var(--space-3); }
+.sd-disclosure summary { cursor: pointer; padding: var(--space-2) 0; color: var(--ink-muted); }
+.sd-disclosure .sd-form { margin-top: var(--space-2); }
+
+/* error line (always words, never colour alone) */
+.sd-error { color: var(--danger); min-height: 20px; margin: 0 0 var(--space-2); }

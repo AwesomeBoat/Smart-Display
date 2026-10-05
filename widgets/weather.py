@@ -32,7 +32,6 @@ async def get_curr_weather():
 
     async with httpx.AsyncClient(timeout=10) as client:
         while True:
-            await asyncio.sleep(5)
             try:
                 response = await client.get(url)
                 response.raise_for_status()
@@ -43,3 +42,5 @@ async def get_curr_weather():
 
             if last_data is not None:
                 yield f"data: {last_data}\n\n"
+            # sleep after the fetch so the display gets the weather right away
+            await asyncio.sleep(5)
