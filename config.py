@@ -27,15 +27,13 @@ LON= os.getenv("LON") or raise_error("LON is missing in .env")
 
 number_type_check(LAT=LAT, LON=LON)
 
-# ICAL calendar
-ICAL_URL = os.getenv("ICAL_URL") or raise_error("ICAL Url is missing in .env")
-
 
 # Paths
 BASE_DIR = Path(__file__).resolve().parent
 ## data
 DB_PATH = BASE_DIR / "data" / "display.db"
-CAL_TXT_PATH = BASE_DIR / "data" / "calendar.txt"
+CALENDARS_DIR = BASE_DIR / "data" / "calendars"
+CALENDARS_DIR.mkdir(parents=True, exist_ok=True)
 ## front
 INDEX_PATH = BASE_DIR / "front" / "index.html"
 JS_SCRIPT_PATH = BASE_DIR / "front" / "script.js"

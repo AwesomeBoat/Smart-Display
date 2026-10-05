@@ -50,19 +50,27 @@ habitsSource.onmessage = function(event){
     }
 }
 
-async function loadCalendar(){
-    const response = await fetch("/calendar/get_calendar");
-    const calendar_list = document.getElementById("calendarList")
-    const data = await response.json();
+// the server pushes the active profile calendar: follows profile switches
+const calendarSource = new EventSource("/calendar/get_curr_calendar");
+const calendarList = document.getElementById("calendarList");
+let lastCalendarData = "";
+
+calendarSource.onmessage = function(event){
+    // only redraw when the data changed
+    if (event.data === lastCalendarData){
+        return;
+    }
+    lastCalendarData = event.data;
+
+    const events = JSON.parse(event.data);
     const now = new Date();
-    for (const element of data){
-        const elementEnd = new Date(element.end);
-        if (elementEnd >= now){
-        const newEvent= document.createElement("li");
-        newEvent.textContent = `${element.title} - ${element.start} - ${element.end}`;
-        calendar_list.appendChild(newEvent);
+    calendarList.innerHTML = "";
+    for (const element of events){
+        // hide past events
+        if (new Date(element.end) >= now){
+            const newEvent = document.createElement("li");
+            newEvent.textContent = `${element.title} - ${element.start} - ${element.end}`;
+            calendarList.appendChild(newEvent);
         }
     }
 }
-
-loadCalendar();

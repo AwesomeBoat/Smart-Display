@@ -13,8 +13,7 @@ wheels/
 ROADMAP.md
 
 .env
-
-calendar.txt
+data/calendars/*
 
 #db
 data/*.db
