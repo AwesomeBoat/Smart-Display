@@ -12,6 +12,7 @@ dependencies = [
     "httpx>=0.28.1",
     "icalendar>=7.3.0",
     "python-multipart>=0.0.32",
+    "recurring-ical-events>=3.8.2",
     "uvicorn[standard]>=0.53.0",
 ]
 

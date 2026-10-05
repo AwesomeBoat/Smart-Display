@@ -1,9 +1,10 @@
 import asyncio
 import json
 from contextlib import asynccontextmanager
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 import httpx
+import recurring_ical_events
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from icalendar import Calendar
@@ -86,15 +87,29 @@ async def get_calendar_from_google(profile_id: int, ical_url: str):
 
 # === PARSE ===
 
+# only events from today to X days later are sent to the display
+DAYS_AHEAD = 30
+
+
+def sort_key(value) -> datetime:
+    """Make dates comparable: all day (date), local (naive) and utc (aware) datetimes"""
+    if not isinstance(value, datetime):
+        value = datetime(value.year, value.month, value.day)
+    # naive = local time, give it the local timezone
+    return value.astimezone()
+
+
 def parse_ical_events(ical_content: str) -> list[dict]:
-    """Parse ical calendar content and return a list of dicts"""
+    """Parse ical calendar content and return the events of the next DAYS_AHEAD days, sorted"""
     calendar = Calendar.from_ical(ical_content)
+    today = date.today()
+    # recurring_ical_events unfolds repeated events (RRULE: every monday...)
+    # walk() would only give their first date, often in the past
+    occurrences = recurring_ical_events.of(calendar).between(today, today + timedelta(days=DAYS_AHEAD))
+    occurrences = sorted(occurrences, key=lambda component: sort_key(component.get("dtstart").dt))
     events = []
 
-    for component in calendar.walk():
-        if component.name != "VEVENT":
-            continue
-
+    for component in occurrences:
         start = component.get("dtstart")
         end = component.get("dtend")
 
