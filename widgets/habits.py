@@ -5,6 +5,7 @@ from typing import Annotated
 import asyncio
 import json
 from data.db import get_db
+from profiles.profile import find_active_profile, check_if_profile_exists
 
 router = APIRouter(
     prefix="/habits",
@@ -26,7 +27,7 @@ def check_habit_exists(conn, habit_id: int):
 # === HABITS ===
 @router.get("/get_habits")
 async def get_habits():
-    """Return all habits"""
+    """Return all habits, every profile included (debug)"""
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute("SELECT * FROM habits")
@@ -48,13 +49,19 @@ async def get_habit(habit_id: int):
         return dict(data)
 
 
-@router.post("/add_habit", status_code=201)
-async def add_habit(name: Annotated[str, Form()]):
-    """Add a habit to the habits table and return it"""
+@router.post("/add_habit/{profile_id}", status_code=201)
+async def add_habit(name: Annotated[str, Form()], profile_id: int):
+    """Add a habit to a profile and return it"""
     with get_db() as conn:
+        # check profile exists, else the foreign key would raise a 500
+        if not check_if_profile_exists(conn, profile_id):
+            raise HTTPException(
+                status_code=404,
+                detail="Profile not found"
+            )
         cur = conn.cursor()
-        cur.execute("INSERT INTO habits (name) VALUES (?)", (name,))
-        return {"id": cur.lastrowid, "name": name}
+        cur.execute("INSERT INTO habits (name, profile_id) VALUES (?, ?)", (name, profile_id))
+        return {"id": cur.lastrowid, "name": name, "profile_id": profile_id}
 
 
 @router.delete("/delete_habit/{habit_id}")
@@ -161,6 +168,18 @@ def habit_streak(conn, habit_id: int):
     return streak(dates)
 
 
+# used by both streams (display + phone)
+# get the profile_id from the caller, don't check active profile here
+def fetch_habits(conn, profile_id: int) -> list[dict]:
+    """Return all habits of a given profile with their current streak"""
+    cur = conn.cursor()
+    cur.execute("SELECT id, name FROM habits WHERE profile_id = ?", (profile_id,))
+    return [
+        {"id": row["id"], "name": row["name"], "streak": habit_streak(conn, row["id"])}
+        for row in cur.fetchall()
+    ]
+
+
 @router.get("/get_streak/{habit_id}")
 async def get_habit_streak(habit_id: int):
     """Return the current streak of a habit"""
@@ -170,25 +189,46 @@ async def get_habit_streak(habit_id: int):
 
 
 # === SSE ===
+# same as todo : display follows the active profile, phones their own profile
+
+# --- Display ---
+
 @router.get("/get_curr_habits")
 async def get_curr_habits():
-    """
-    Streaming Response to js script from get_habits_data function
-    """
+    """Stream the active profile habits to the display (script.js)"""
     return StreamingResponse(media_type="text/event-stream", content=get_habits_data())
 
 
 async def get_habits_data():
-    """
-    yield all habits with their current streak every sec
-    """
+    """Every second, send the habits of the active profile with their streak"""
+    while True:
+        await asyncio.sleep(1)
+        # check active profile at each loop so display follows profile switch
+        with get_db() as conn:
+            habits = json.dumps(fetch_habits(conn, find_active_profile(conn)))
+        yield f"data: {habits}\n\n"
+
+
+# --- Phone ---
+
+@router.get("/stream_habits/{profile_id}")
+async def stream_profile_habits(profile_id: int):
+    """Stream the habits of the given profile (phone)"""
+    # check profile b4 streaming, once started 200 is already sent so no 404 possible
+    with get_db() as conn:
+        if not check_if_profile_exists(conn, profile_id):
+            raise HTTPException(
+                status_code=404,
+                detail="Profile not found"
+            )
+    return StreamingResponse(media_type="text/event-stream", content=stream_habit_gen(profile_id))
+
+
+async def stream_habit_gen(profile_id: int):
+    """Every second, send the habits of the given profile with their streak"""
+    # same as get_habits_data but profile_id comes from the phone
     while True:
         await asyncio.sleep(1)
         with get_db() as conn:
-            cur = conn.cursor()
-            cur.execute("SELECT id, name FROM habits")
-            habits = [
-                {"id": row["id"], "name": row["name"], "streak": habit_streak(conn, row["id"])}
-                for row in cur.fetchall()
-            ]
-        yield f"data: {json.dumps(habits)}\n\n"
+            habits = json.dumps(fetch_habits(conn, profile_id))
+        yield f"data: {habits}\n\n"

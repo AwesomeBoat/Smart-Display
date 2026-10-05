@@ -10,7 +10,7 @@ from profiles import profile
 
 
 
-# Create the tables (and apply db migrations) at startup
+# Create the tables at startup
 init_db()
 
 # APP

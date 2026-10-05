@@ -63,7 +63,8 @@ def delete_profile(profile_id: int):
                 detail="Can't delete the active profile, activate another one before"
             )
         # Delete habits, habit_logs and task b4 deleting the profile as they contain foreign keys
-        cur.execute("DELETE FROM habit_logs WHERE profile_id = ?", (profile_id,))
+        # logs have no profile_id, find them through the profile's habits
+        cur.execute("DELETE FROM habit_logs WHERE habit_id IN (SELECT id FROM habits WHERE profile_id = ?)", (profile_id,))
         cur.execute("DELETE FROM habits WHERE profile_id = ?",(profile_id,))
         cur.execute("DELETE FROM task WHERE profile_id = ?",(profile_id,))
         cur.execute("DELETE FROM profile WHERE id = ?", (profile_id,))

@@ -140,17 +140,30 @@
         const habitForm = document.getElementById("habitForm");
         const habitInput = document.getElementById("habitInput");
         let lastHabitsData = "";
+        let habitsSource = null;
 
         habitForm.onsubmit = async function(event){
             event.preventDefault();
-            const result = await callApi("/habits/add_habit", {method: "POST", body: new FormData(habitForm)});
+            if (!profileId){
+                return;
+            }
+            const result = await callApi(`/habits/add_habit/${profileId}`, {method: "POST", body: new FormData(habitForm)});
             if (result){
                 habitInput.value = "";
             }
         };
 
-        const habitsSource = new EventSource("/habits/get_curr_habits");
-        habitsSource.onmessage = function(event){
+        // same as tasks: one stream per profile, closed on profile switch
+        function startHabitStream(id){
+            if (habitsSource){
+                habitsSource.close();
+            }
+            lastHabitsData = "";
+            habitsSource = new EventSource(`/habits/stream_habits/${id}`);
+            habitsSource.onmessage = renderHabits;
+        }
+
+        function renderHabits(event){
             if (event.data === lastHabitsData){
                 return;
             }
@@ -176,7 +189,7 @@
                 }));
                 habitList.appendChild(li);
             }
-        };
+        }
 
         // === PROFILE ===
         // each phone remembers its own profile in localStorage (survives page reload)
@@ -187,6 +200,7 @@
             profileId = id;
             localStorage.setItem("profileId", id);
             startTaskStream(id);
+            startHabitStream(id);
         }
 
         async function initProfiles(){

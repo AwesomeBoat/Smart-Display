@@ -31,14 +31,13 @@ def init_db():
     FOREIGN KEY(profile_id) REFERENCES profile(id));
     """
 
+    # no profile_id here: the profile is found through the habit
     habit_logs="""
     CREATE TABLE IF NOT EXISTS habit_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     habit_id INTEGER NOT NULL,
     date TEXT NOT NULL,
-    profile_id INTEGER NOT NULL,
-    FOREIGN KEY(habit_id) REFERENCES habits(id),
-    FOREIGN KEY(profile_id) REFERENCES profile(id));
+    FOREIGN KEY(habit_id) REFERENCES habits(id));
     """
 
     task="""
