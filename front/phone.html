@@ -16,10 +16,14 @@
         input[type="text"] { flex: 1; font-size: 1rem; padding: 0.6rem; }
         button { font-size: 1rem; padding: 0.6rem 0.8rem; }
         #message { color: #b00020; min-height: 1.5rem; }
+        select { font-size: 1rem; padding: 0.4rem; }
     </style>
 </head>
 <body>
     <p id="message"></p>
+
+    <label for="profileSelect">Profil :</label>
+    <select id="profileSelect"></select>
 
     <h2>Tâches</h2>
     <form id="taskForm">
@@ -70,18 +74,31 @@
         const taskForm = document.getElementById("taskForm");
         const taskInput = document.getElementById("taskInput");
         let lastTasksData = "";
+        let tasksSource = null;
 
         taskForm.onsubmit = async function(event){
             event.preventDefault();
-            const result = await callApi("/todo/add_task", {method: "POST", body: new FormData(taskForm)});
+            if (!profileId){
+                return;
+            }
+            const result = await callApi(`/todo/add_task/${profileId}`, {method: "POST", body: new FormData(taskForm)});
             if (result){
                 taskInput.value = "";
             }
         };
 
-        // the server pushes the list: every change (from any device) is displayed
-        const tasksSource = new EventSource("/todo/get_curr_todo");
-        tasksSource.onmessage = function(event){
+        // the server pushes the list of this phone's profile: every change (from any device) is displayed
+        function startTaskStream(id){
+            // close the previous stream, else each profile switch stacks one more
+            if (tasksSource){
+                tasksSource.close();
+            }
+            lastTasksData = "";
+            tasksSource = new EventSource(`/todo/stream_tasks/${id}`);
+            tasksSource.onmessage = renderTasks;
+        }
+
+        function renderTasks(event){
             if (event.data === lastTasksData){
                 return;
             }
@@ -116,7 +133,7 @@
                 }));
                 taskList.appendChild(li);
             }
-        };
+        }
 
         // === HABITS ===
         const habitList = document.getElementById("habitList");
@@ -160,6 +177,44 @@
                 habitList.appendChild(li);
             }
         };
+
+        // === PROFILE ===
+        // each phone remembers its own profile in localStorage (survives page reload)
+        const profileSelect = document.getElementById("profileSelect");
+        let profileId = null;
+
+        function useProfile(id){
+            profileId = id;
+            localStorage.setItem("profileId", id);
+            startTaskStream(id);
+        }
+
+        async function initProfiles(){
+            const profiles = await callApi("/profile/get_all_profiles");
+            if (!profiles || profiles.length === 0){
+                message.textContent = "Aucun profil";
+                return;
+            }
+            for (const profile of profiles){
+                const option = document.createElement("option");
+                option.value = profile.id;
+                option.textContent = profile.name;
+                profileSelect.appendChild(option);
+            }
+            // localStorage stores text: compare as strings
+            // saved profile may have been deleted -> fall back to the first one
+            const saved = localStorage.getItem("profileId");
+            const exists = profiles.some(profile => String(profile.id) === saved);
+            const id = exists ? saved : String(profiles[0].id);
+            profileSelect.value = id;
+            useProfile(id);
+        }
+
+        profileSelect.onchange = function(){
+            useProfile(profileSelect.value);
+        };
+
+        initProfiles();
     </script>
 </body>
 </html>
