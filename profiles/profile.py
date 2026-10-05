@@ -97,6 +97,7 @@ def set_active(profile_id: int):
         return dict(cur.fetchone())
 
 def check_if_profile_exists(conn, profile_id: int):
+    """Return True if profile exists"""
     cur = conn.cursor()
     cur.execute("SELECT id FROM profile WHERE id = ?", (profile_id,))
     if cur.fetchone() is None:
@@ -105,9 +106,16 @@ def check_if_profile_exists(conn, profile_id: int):
 
 
 def check_if_profile_active(conn, profile_id: int):
+        """Return True if profile is active"""
         cur = conn.cursor()
         cur.execute("SELECT active FROM profile where id = ?",(profile_id,))
         if cur.fetchone()["active"] == 0:
             return False
         return True
+
+def find_active_profile(conn):
+    """Return the id of the current active profile"""
+    cur = conn.cursor()
+    cur.execute("SELECT id FROM profile WHERE active = ?", (1,))
+    return cur.fetchone()["id"]
 
