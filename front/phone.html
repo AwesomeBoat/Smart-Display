@@ -31,7 +31,7 @@
     <select id="profileSelect"></select>
     <p id="mirrorStatus"></p>
     <div class="row">
-        <button id="showOnMirrorBtn">Afficher sur le miroir</button>
+        <button id="showOnMirrorBtn">Afficher sur l'écran</button>
         <button id="deleteProfileBtn">Supprimer ce profil</button>
     </div>
     <details id="profileDetails">
@@ -243,11 +243,11 @@
             for (const profile of profiles){
                 const option = document.createElement("option");
                 option.value = profile.id;
-                option.textContent = profile.active ? `${profile.name} (miroir)` : profile.name;
+                option.textContent = profile.active ? `${profile.name} (écran)` : profile.name;
                 profileSelect.appendChild(option);
             }
             const active = profiles.find(profile => profile.active);
-            mirrorStatus.textContent = active ? `Sur le miroir : ${active.name}` : "";
+            mirrorStatus.textContent = active ? `Sur l'écran : ${active.name}` : "";
 
             // keep the current profile, else the saved one
             // it may have been deleted -> fall back to the first one
