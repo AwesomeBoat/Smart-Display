@@ -13,10 +13,15 @@
         li.task .label { flex: 1; }
         input[type="checkbox"] { width: 1.5rem; height: 1.5rem; }
         form { display: flex; gap: 0.5rem; }
-        input[type="text"] { flex: 1; font-size: 1rem; padding: 0.6rem; }
+        input[type="text"], input[type="url"] { flex: 1; font-size: 1rem; padding: 0.6rem; }
         button { font-size: 1rem; padding: 0.6rem 0.8rem; }
         #message { color: #b00020; min-height: 1.5rem; }
         select { font-size: 1rem; padding: 0.4rem; }
+        .row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+        #mirrorStatus { color: #555; margin: 0.5rem 0 0; }
+        details { margin-top: 0.75rem; }
+        summary { cursor: pointer; padding: 0.4rem 0; }
+        #profileForm { flex-direction: column; }
     </style>
 </head>
 <body>
@@ -24,6 +29,19 @@
 
     <label for="profileSelect">Profil :</label>
     <select id="profileSelect"></select>
+    <p id="mirrorStatus"></p>
+    <div class="row">
+        <button id="showOnMirrorBtn">Afficher sur le miroir</button>
+        <button id="deleteProfileBtn">Supprimer ce profil</button>
+    </div>
+    <details id="profileDetails">
+        <summary>Nouveau profil</summary>
+        <form id="profileForm">
+            <input type="text" name="name" placeholder="Nom" required>
+            <input type="url" name="ical_url" placeholder="URL iCal (optionnel)">
+            <button type="submit">Créer</button>
+        </form>
+    </details>
 
     <h2>Tâches</h2>
     <form id="taskForm">
@@ -53,6 +71,10 @@
                     const error = await response.json();
                     message.textContent = `Erreur ${response.status} : ${error.detail}`;
                     return null;
+                }
+                // 204 = success with no body (ex: delete_profile), nothing to parse
+                if (response.status === 204){
+                    return true;
                 }
                 return await response.json();
             } catch (e) {
@@ -194,6 +216,10 @@
         // === PROFILE ===
         // each phone remembers its own profile in localStorage (survives page reload)
         const profileSelect = document.getElementById("profileSelect");
+        const mirrorStatus = document.getElementById("mirrorStatus");
+        const profileDetails = document.getElementById("profileDetails");
+        const profileForm = document.getElementById("profileForm");
+        // always a string (comes from the select or localStorage)
         let profileId = null;
 
         function useProfile(id){
@@ -203,32 +229,77 @@
             startHabitStream(id);
         }
 
-        async function initProfiles(){
+        // (re)build the select from the server, called at start and after each profile change
+        async function loadProfiles(){
             const profiles = await callApi("/profile/get_all_profiles");
-            if (!profiles || profiles.length === 0){
+            if (!profiles){
+                return;
+            }
+            profileSelect.innerHTML = "";
+            if (profiles.length === 0){
                 message.textContent = "Aucun profil";
                 return;
             }
             for (const profile of profiles){
                 const option = document.createElement("option");
                 option.value = profile.id;
-                option.textContent = profile.name;
+                option.textContent = profile.active ? `${profile.name} (miroir)` : profile.name;
                 profileSelect.appendChild(option);
             }
-            // localStorage stores text: compare as strings
-            // saved profile may have been deleted -> fall back to the first one
-            const saved = localStorage.getItem("profileId");
-            const exists = profiles.some(profile => String(profile.id) === saved);
-            const id = exists ? saved : String(profiles[0].id);
+            const active = profiles.find(profile => profile.active);
+            mirrorStatus.textContent = active ? `Sur le miroir : ${active.name}` : "";
+
+            // keep the current profile, else the saved one
+            // it may have been deleted -> fall back to the first one
+            const wanted = profileId ?? localStorage.getItem("profileId");
+            const exists = profiles.some(profile => String(profile.id) === wanted);
+            const id = exists ? wanted : String(profiles[0].id);
             profileSelect.value = id;
-            useProfile(id);
+            // only restart the streams if the profile really changed
+            if (id !== profileId){
+                useProfile(id);
+            }
         }
 
         profileSelect.onchange = function(){
             useProfile(profileSelect.value);
         };
 
-        initProfiles();
+        // show this phone's profile on the mirror
+        document.getElementById("showOnMirrorBtn").onclick = async function(){
+            const result = await callApi(`/profile/set_active/${profileId}`, {method: "PATCH"});
+            if (result){
+                loadProfiles();
+            }
+        };
+
+        // the server refuses (409) to delete the profile shown on the mirror: message displayed by callApi
+        document.getElementById("deleteProfileBtn").onclick = async function(){
+            const name = profileSelect.selectedOptions[0]?.textContent;
+            if (!confirm(`Supprimer le profil "${name}" avec toutes ses tâches et habitudes ?`)){
+                return;
+            }
+            const result = await callApi(`/profile/delete_profile/${profileId}`, {method: "DELETE"});
+            if (result){
+                loadProfiles();
+            }
+        };
+
+        // create a profile and switch this phone to it
+        profileForm.onsubmit = async function(event){
+            event.preventDefault();
+            const result = await callApi("/profile/create_profile", {method: "POST", body: new FormData(profileForm)});
+            if (result){
+                profileForm.reset();
+                profileDetails.open = false;
+                profileId = String(result.id);
+                localStorage.setItem("profileId", profileId);
+                await loadProfiles();
+                useProfile(profileId);
+            }
+        };
+
+        loadProfiles();
     </script>
 </body>
 </html>
